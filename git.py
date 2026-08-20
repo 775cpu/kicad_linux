@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse, logging, os, platform, shutil, subprocess, sys, time
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
