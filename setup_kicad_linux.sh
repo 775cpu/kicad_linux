@@ -18,6 +18,7 @@ install_packages() {
 
     "${apt_runner[@]}" update
     "${apt_runner[@]}" install -y kicad python3-pip python3-venv
+    git clone --depth=1 https://github.com/qgb/qpsu qgb
 }
 
 if ! command -v kicad-cli >/dev/null 2>&1; then
