@@ -24,11 +24,11 @@ def build_footprint(name: str) -> Footprint:
                 layers=Pad.LAYERS_THT,
             )
         )
-
+    w,h=22,11
     footprint.append(
         RectLine(
-            start=[-4.0, -1.5],
-            end=[4.0, 1.5],
+            start=[-w/2, -h/2],
+            end=[w/2, h/2],
             layer="F.SilkS",
             width=0.2,
         )

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-26.25 -14.0 52.5 28.0" width="1050.0px" height="560.0px">
+  <rect x="-26.25" y="-14.0" width="52.5" height="28.0" fill="#0A0A0A"/>
+<line x1="-15.0" y1="-10.0" x2="-15.0" y2="10.0" stroke="#E6E6E6" stroke-width="0.12" stroke-linecap="round"/>
+  <line x1="-15.0" y1="10.0" x2="15.0" y2="10.0" stroke="#E6E6E6" stroke-width="0.12" stroke-linecap="round"/>
+  <line x1="15.0" y1="10.0" x2="15.0" y2="-10.0" stroke="#E6E6E6" stroke-width="0.12" stroke-linecap="round"/>
+  <line x1="15.0" y1="-10.0" x2="-15.0" y2="-10.0" stroke="#E6E6E6" stroke-width="0.12" stroke-linecap="round"/>
+  <line x1="-4.5" y1="-6.0" x2="4.5" y2="-6.0" stroke="#D45D5D" stroke-width="0.05" stroke-linecap="round"/>
+  <line x1="4.5" y1="-6.0" x2="4.5" y2="-4.0" stroke="#D45D5D" stroke-width="0.05" stroke-linecap="round"/>
+  <line x1="4.5" y1="-4.0" x2="-4.5" y2="-4.0" stroke="#D45D5D" stroke-width="0.05" stroke-linecap="round"/>
+  <line x1="-4.5" y1="-4.0" x2="-4.5" y2="-6.0" stroke="#D45D5D" stroke-width="0.05" stroke-linecap="round"/>
+  <circle cx="-3.81" cy="-8.0" r="0.6" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-4.3100000000000005" y="-9.399999999999999" width="1.0" height="1.4" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-1.27" cy="-8.0" r="0.6" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-1.77" y="-9.399999999999999" width="1.0" height="1.4" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="1.27" cy="-8.0" r="0.6" fill="#D45D5D" opacity="0.85"/>
+  <rect x="0.77" y="-9.399999999999999" width="1.0" height="1.4" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="3.81" cy="-8.0" r="0.6" fill="#D45D5D" opacity="0.85"/>
+  <rect x="3.31" y="-9.399999999999999" width="1.0" height="1.4" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-3.81" cy="-5.46" r="0.6" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-4.3100000000000005" y="-5.46" width="1.0" height="1.4" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-1.27" cy="-5.46" r="0.6" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-1.77" y="-5.46" width="1.0" height="1.4" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="1.27" cy="-5.46" r="0.6" fill="#D45D5D" opacity="0.85"/>
+  <rect x="0.77" y="-5.46" width="1.0" height="1.4" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="3.81" cy="-5.46" r="0.6" fill="#D45D5D" opacity="0.85"/>
+  <rect x="3.31" y="-5.46" width="1.0" height="1.4" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-22.25" cy="-3.0" r="0.55" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-22.75" y="-3.75" width="1.0" height="1.5" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-18.75" cy="-3.0" r="0.55" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-19.25" y="-3.75" width="1.0" height="1.5" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-15.25" cy="-3.0" r="0.55" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-15.75" y="-3.75" width="1.0" height="1.5" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-11.75" cy="-3.0" r="0.55" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-12.25" y="-3.75" width="1.0" height="1.5" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-8.25" cy="-3.0" r="0.55" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-8.75" y="-3.75" width="1.0" height="1.5" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-4.75" cy="-3.0" r="0.55" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-5.25" y="-3.75" width="1.0" height="1.5" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="-1.25" cy="-3.0" r="0.55" fill="#D45D5D" opacity="0.85"/>
+  <rect x="-1.75" y="-3.75" width="1.0" height="1.5" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <circle cx="2.25" cy="-3.0" r="0.55" fill="#D45D5D" opacity="0.85"/>
+  <rect x="1.75" y="-3.75" width="1.0" height="1.5" rx="0" ry="0" fill="#D45D5D" opacity="0.85"/>
+  <polygon points="4.5,6.0 4.5,4.0 -4.5,4.0 -4.5,6.0" fill="#D45D5D" opacity="0.7" stroke="#D45D5D" stroke-width="0.05"/>
+  <circle cx="-3.81" cy="-8.0" r="0.45" fill="#0A0A0A"/>
+  <circle cx="-1.27" cy="-8.0" r="0.45" fill="#0A0A0A"/>
+  <circle cx="1.27" cy="-8.0" r="0.45" fill="#0A0A0A"/>
+  <circle cx="3.81" cy="-8.0" r="0.45" fill="#0A0A0A"/>
+  <circle cx="-3.81" cy="-5.46" r="0.5" fill="#0A0A0A"/>
+  <circle cx="-1.27" cy="-5.46" r="0.5" fill="#0A0A0A"/>
+  <circle cx="1.27" cy="-5.46" r="0.5" fill="#0A0A0A"/>
+  <circle cx="3.81" cy="-5.46" r="0.5" fill="#0A0A0A"/>
+  <circle cx="-22.25" cy="-3.0" r="0.5" fill="#0A0A0A"/>
+  <circle cx="-18.75" cy="-3.0" r="0.5" fill="#0A0A0A"/>
+  <circle cx="-15.25" cy="-3.0" r="0.5" fill="#0A0A0A"/>
+  <circle cx="-11.75" cy="-3.0" r="0.5" fill="#0A0A0A"/>
+  <circle cx="-8.25" cy="-3.0" r="0.5" fill="#0A0A0A"/>
+  <circle cx="-4.75" cy="-3.0" r="0.5" fill="#0A0A0A"/>
+  <circle cx="-1.25" cy="-3.0" r="0.5" fill="#0A0A0A"/>
+  <circle cx="2.25" cy="-3.0" r="0.5" fill="#0A0A0A"/>
+    <!-- Auto Routed Path -->
+  <polyline points="-3.81,-8.0 -22.25,-3.0" fill="none" stroke="#00FF00" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="-4.8100000000000005" y1="-8.0" x2="-2.81" y2="-8.0" stroke="#00FF00" stroke-width="0.15" stroke-linecap="round"/>
+  <line x1="-3.81" y1="-9.0" x2="-3.81" y2="-7.0" stroke="#00FF00" stroke-width="0.15" stroke-linecap="round"/>
+    <line x1="-23.25" y1="-3.0" x2="-21.25" y2="-3.0" stroke="#00FF00" stroke-width="0.15" stroke-linecap="round"/>
+  <line x1="-22.25" y1="-4.0" x2="-22.25" y2="-2.0" stroke="#00FF00" stroke-width="0.15" stroke-linecap="round"/>
+</svg>

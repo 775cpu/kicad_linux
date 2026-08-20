@@ -16,9 +16,10 @@ F=sys.modules['qgb.F']
 
 try:
     import math
-    import pcbnew
     from KicadModTree import *
     import KicadModTree
+    import pcbnew
+    
 except Exception as e:print('import pcbnew',e)	
 ################################################
 import locale

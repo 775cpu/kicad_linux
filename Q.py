@@ -1,5 +1,8 @@
 #coding=utf-8
-# from qgb import py
+try:
+    from qgb import py
+    U,T,N,F=py.importUTNF()
+except:raise
 # try:
     # from qgb.kicad import *
     # import qgb.kicad
@@ -11,11 +14,12 @@ py=sys.modules['qgb.py']
 from kicad import *
 import kicad
 try:
+    
     from memory_detect import rpc_get_memory_report,rpc_check_container_contents
 except Exception as e:
     rpc_check_container_contents=e
 #
-import pcbnew
+
 import os
 
 def board_to_svg(board, layers=None, output_dir=None):
