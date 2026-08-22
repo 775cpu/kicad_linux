@@ -129,20 +129,18 @@ def make_dsn(
     trace_width: float = 0.254,
     clearance: float = 0.200,
     margin: float = 20.0,
-) -> None:
-    """生成 DSN 文件，支持指定层、线宽、间距及板框外扩边距。"""
+) -> tuple[float, float, float, float]:
+    """生成 DSN 文件，支持指定层、线宽、间距及板框外扩边距，并返回实际板框边界。"""
     
     width_um = int(trace_width * 1000)
     clearance_um = int(clearance * 1000)
     layers_str = " ".join(routing_layers)
 
-    # 元件包围盒计算
     comp_min_x = min(p["x"] + p["rel_bounds"][0] for p in pads)
     comp_max_x = max(p["x"] + p["rel_bounds"][2] for p in pads)
     comp_min_y = min(p["y"] + p["rel_bounds"][1] for p in pads)
     comp_max_y = max(p["y"] + p["rel_bounds"][3] for p in pads)
     
-    # 动态构建板框范围 (默认为元件包围盒 + margin)
     board_min_x, board_max_x = comp_min_x - margin, comp_max_x + margin
     board_min_y, board_max_y = comp_min_y - margin, comp_max_y + margin
 
@@ -166,7 +164,7 @@ def make_dsn(
         '    (layer F.Cu (type signal) (property (index 0)))',
         '    (layer B.Cu (type signal) (property (index 1)))',
         f'    (boundary (path pcb 0 {board_min_x * scale:.0f} {board_min_y * scale:.0f} {board_max_x * scale:.0f} {board_min_y * scale:.0f} {board_max_x * scale:.0f} {board_max_y * scale:.0f} {board_min_x * scale:.0f} {board_max_y * scale:.0f} {board_min_x * scale:.0f} {board_min_y * scale:.0f}))',
-        '    (via via0)',  # 必需：防 FreeRouting 崩溃
+        '    (via via0)',
         f'    (rule (width {width_um}) (clearance {clearance_um}))', 
         '  )',
         '  (placement',
@@ -221,6 +219,7 @@ def make_dsn(
         ''
     ]
     output.write_text("\n".join(lines), encoding="utf-8")
+    return board_min_x, board_min_y, board_max_x, board_max_y
 
 
 def parse_ses(ses_path: Path) -> dict[str, list[list[tuple[float, float]]]]:
@@ -256,20 +255,63 @@ def parse_ses(ses_path: Path) -> dict[str, list[list[tuple[float, float]]]]:
     return routes
 
 
-def render_svg(footprint: Path, svg: Path, routes: dict[str, list[list[tuple[float, float]]]], trace_width: float = 0.254) -> None:
+def render_svg(
+    footprint: Path, 
+    svg: Path, 
+    routes: dict[str, list[list[tuple[float, float]]]], 
+    trace_width: float = 0.254, 
+    board_bounds: tuple[float, float, float, float] | None = None
+) -> None:
     from k2svg import kicad_to_svg
 
     base_svg = svg.with_name(f".{svg.stem}.base.svg")
     kicad_to_svg(str(footprint), layers=["F.Cu", "B.Cu", "Edge.Cuts", "F.SilkS"], out_dir=str(svg.parent), file_name=base_svg.name)
     content = base_svg.read_text(encoding="utf-8")
-    marks = []
-    colors = ["#00FF00", "#00BFFF", "#FFB000", "#FF4FA3", "#A8FF00", "#FFFFFF"]
     
+    # 收集实际走线与封装的所有坐标范围，紧凑裁切 viewBox 消除巨额空白
+    all_x, all_y = [], []
+    for segments in routes.values():
+        for pts in segments:
+            for x, y in pts:
+                all_x.append(x)
+                all_y.append(y)
+
+    if all_x and all_y:
+        pad = 5.0  # 适当留白 5mm
+        v_x1, v_y1 = min(all_x) - pad, min(all_y) - pad
+        v_x2, v_y2 = max(all_x) + pad, max(all_y) + pad
+        v_w, v_h = v_x2 - v_x1, v_y2 - v_y1
+
+        # 重写 ViewBox 与背景 Rect，使其完美紧贴走线区域
+        content = re.sub(r'viewBox="[^"]+"', f'viewBox="{v_x1:.3f} {v_y1:.3f} {v_w:.3f} {v_h:.3f}"', content)
+        content = re.sub(r'width="[^"]+"', 'width="100%"', content, count=1)
+        content = re.sub(r'height="[^"]+"', 'height="100%"', content, count=1)
+        content = re.sub(r'<rect x="[^"]+" y="[^"]+" width="[^"]+" height="[^"]+" fill="#000000"[^>]*>', 
+                         f'<rect x="{v_x1:.3f}" y="{v_y1:.3f}" width="{v_w:.3f}" height="{v_h:.3f}" fill="#000000" />', content)
+
+    marks = []
+    
+    # 绘制 FreeRouting 实际边界与中心十字
+    if board_bounds:
+        bx1, by1, bx2, by2 = board_bounds
+        w = bx2 - bx1
+        h = by2 - by1
+        cx = (bx1 + bx2) / 2.0
+        cy = (by1 + by2) / 2.0
+        
+        cross_size = 1  # 十字标尺寸 3mm
+        
+        marks.append(f'  <!-- FreeRouting Boundary -->')
+        marks.append(f'  <rect x="{bx1:.3f}" y="{by1:.3f}" width="{w:.3f}" height="{h:.3f}" fill="none" stroke="red" stroke-width="0.1" stroke-dasharray="2,2"/>')
+        marks.append(f'  <!-- Center Cross -->')
+        marks.append(f'  <line x1="{cx - cross_size:.3f}" y1="{cy:.3f}" x2="{cx + cross_size:.3f}" y2="{cy:.3f}" stroke="red" stroke-width="0.1"/>')
+        marks.append(f'  <line x1="{cx:.3f}" y1="{cy - cross_size:.3f}" x2="{cx:.3f}" y2="{cy + cross_size:.3f}" stroke="red" stroke-width="0.1"/>')
+
+    colors = ["#00FF00", "#00BFFF", "#FFB000", "#FF4FA3", "#A8FF00", "#FFFFFF"]
     for index, (net, segments) in enumerate(routes.items()):
         color = colors[index % len(colors)]
         for points in segments:
             points_text = " ".join(f"{x:.3f},{y:.3f}" for x, y in points)
-            # 使用动态 trace_width 参数更新 stroke-width
             marks.append(f'  <!-- FreeRouting {net} -->\n  <polyline points="{points_text}" fill="none" stroke="{color}" stroke-width="{trace_width:.3f}" stroke-linecap="round" stroke-linejoin="round"/>')
             
     content = content.replace("\n</svg>", "\n" + "\n".join(marks) + "\n</svg>")
@@ -319,13 +361,10 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=ROOT / "generated" / "svg")
     parser.add_argument("--jar", type=Path, default=DEFAULT_JAR)
     
-    # 布线与几何控制参数
     parser.add_argument("--layers", nargs="+", default=["F.Cu"], help="允许布线的层，如 F.Cu B.Cu")
     parser.add_argument("--trace-width", type=float, default=0.254, help="线宽 (mm)，默认 0.254")
     parser.add_argument("--clearance", type=float, default=0.5, help="安全间距 (mm)，默认 0.200")
     parser.add_argument("--margin", type=float, default=20.0, help="板框外扩边距 (mm)，默认 20.0")
-    
-    # FreeRouting 引擎高级参数
     parser.add_argument("--passes", type=int, default=100, help="FreeRouting 路由最大迭代次数 (-mp)，默认 100")
     
     args = parser.parse_args()
@@ -340,7 +379,7 @@ def main() -> None:
     svg = args.output_dir / f"{name}-freerouting.svg"
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    make_dsn(
+    board_bounds = make_dsn(
         name=name,
         pads=pads,
         obstacles=obstacles,
@@ -362,8 +401,7 @@ def main() -> None:
     
     routes = parse_ses(ses)
     
-    # 将 args.trace_width 显式传入 render_svg 函数
-    render_svg(args.input, svg, routes, trace_width=args.trace_width)
+    render_svg(args.input, svg, routes, trace_width=args.trace_width, board_bounds=board_bounds)
     
     if len(routes) != len(connections):
         raise RuntimeError(
