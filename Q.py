@@ -134,17 +134,17 @@ def IBT_2x4(kicad_mod=None, x=0, y=0, angle=0, zip=0):
     x=0
     y=-8
     
-    cs=plated_hole_line(kicad_mod, x, y, pitch=2.54, n=4, d=0.9, size=size,angle=angle, smt_pad_ka=dict(at_delta=[0,-dy],size=psize)  )
+    cs1_4=plated_hole_line(kicad_mod, x, y, pitch=2.54, n=4, d=0.9, size=size,angle=angle, smt_pad_ka=dict(at_delta=[0,-dy],size=psize)  )
 
     # 下排：SMT 焊盘中心向下 (Y 轴正方向) 偏移 
-    plated_hole_line(kicad_mod,x,y+2.54,pitch=2.54,n=4,d=1.0, size=size,angle=angle, smt_pad_ka=dict(at_delta=[0,dy],size=psize)  ,)
+    cs5_8=plated_hole_line(kicad_mod,x,y+2.54,pitch=2.54,n=4,d=1.0, size=size,angle=angle, smt_pad_ka=dict(at_delta=[0,dy],size=psize)  ,)
 
     cs8=plated_hole_line(kicad_mod,x-10,y+5,pitch=3.5,n=8)
     
-    #怎么走线 cs[0]  和 cs[8][0]
     
-    rectangle_full(kicad_mod,0,5, w=9, h=2, layers=['F.Cu',]) 
-    rectline_center(kicad_mod,0,-5, w=9, h=2, layers=['F.Cu',]) 
+    
+    #rectangle_full(kicad_mod,0,5, w=9, h=2, layers=['F.Cu',]) 
+    #rectline_center(kicad_mod,0,-5, w=9, h=2, layers=['F.Cu',]) 
     
     return write_kicad_mod(kicad_mod, zip=zip)
 
