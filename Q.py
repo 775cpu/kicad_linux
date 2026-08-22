@@ -139,7 +139,7 @@ def IBT_2x4(kicad_mod=None, x=0, y=0, angle=0, zip=0):
     # 下排：SMT 焊盘中心向下 (Y 轴正方向) 偏移 
     cs5_8=plated_hole_line(kicad_mod,x,y+2.54,pitch=2.54,n=4,d=1.0, size=size,angle=angle, smt_pad_ka=dict(at_delta=[0,dy],size=psize)  ,)
 
-    cs8=plated_hole_line(kicad_mod,x-10,y+5,pitch=3.5,n=8)
+    cs8=plated_hole_line(kicad_mod,x-7,y+6,pitch=3.5,n=8)
     
     
     

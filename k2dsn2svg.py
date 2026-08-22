@@ -51,7 +51,6 @@ def read_footprint(path: Path):
     if not data or data[0] != "module":
         raise ValueError(f"无效的 KiCad 封装: {path}")
 
-    # 1. 收集所有的物理焊盘并按引脚名称聚类
     pad_groups = {}
     obstacles = []
     for item in data[2:]:
@@ -72,9 +71,7 @@ def read_footprint(path: Path):
                 obstacles.append([(float(start[1]), float(start[2])), (float(end[1]), float(end[2]))])
 
     pads = []
-    # 2. 合并同名焊盘（如 thru_hole + smd 偏置），提取能覆盖所有碎片的绝对外框
     for pad_name, shapes in pad_groups.items():
-        # 寻找主锚点（优先采用 thru_hole 类型的坐标作为基准连线中心）
         anchor_at = None
         for shape in shapes:
             if shape[2] == "thru_hole":
@@ -98,7 +95,6 @@ def read_footprint(path: Path):
             px, py = float(at[1]), float(at[2])
             pw, ph = float(size[1]), float(size[2])
             
-            # 兼容带有旋转角度的 pad (处理正交旋转)
             if len(at) > 3:
                 rot = float(at[3])
                 if rot in (90, 270, -90, -270):
@@ -109,7 +105,6 @@ def read_footprint(path: Path):
             min_y = min(min_y, py - ph / 2.0)
             max_y = max(max_y, py + ph / 2.0)
 
-        # 生成相对于主锚点的边框（供 FreeRouting 作为 padstack shape）
         rel_bounds = (min_x - anchor_x, min_y - anchor_y, max_x - anchor_x, max_y - anchor_y)
         
         pads.append({
@@ -124,15 +119,32 @@ def read_footprint(path: Path):
     return data[1], pads, obstacles
 
 
-def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, float]]],
-             connections: list[tuple[int, int]], output: Path) -> None:
-    # 此时计算全局包围盒也需把焊盘偏置算入
-    min_x = min(p["x"] + p["rel_bounds"][0] for p in pads)
-    max_x = max(p["x"] + p["rel_bounds"][2] for p in pads)
-    min_y = min(p["y"] + p["rel_bounds"][1] for p in pads)
-    max_y = max(p["y"] + p["rel_bounds"][3] for p in pads)
-    min_x, max_x = min_x - 5.0, max_x + 5.0
-    min_y, max_y = min_y - 5.0, max_y + 5.0
+def make_dsn(
+    name: str,
+    pads: list[dict],
+    obstacles: list[list[tuple[float, float]]],
+    connections: list[tuple[int, int]],
+    output: Path,
+    routing_layers: list[str] = ["F.Cu"],
+    trace_width: float = 0.254,
+    clearance: float = 0.200,
+    margin: float = 20.0,
+) -> None:
+    """生成 DSN 文件，支持指定层、线宽、间距及板框外扩边距。"""
+    
+    width_um = int(trace_width * 1000)
+    clearance_um = int(clearance * 1000)
+    layers_str = " ".join(routing_layers)
+
+    # 元件包围盒计算
+    comp_min_x = min(p["x"] + p["rel_bounds"][0] for p in pads)
+    comp_max_x = max(p["x"] + p["rel_bounds"][2] for p in pads)
+    comp_min_y = min(p["y"] + p["rel_bounds"][1] for p in pads)
+    comp_max_y = max(p["y"] + p["rel_bounds"][3] for p in pads)
+    
+    # 动态构建板框范围 (默认为元件包围盒 + margin)
+    board_min_x, board_max_x = comp_min_x - margin, comp_max_x + margin
+    board_min_y, board_max_y = comp_min_y - margin, comp_max_y + margin
 
     scale = 1000
     
@@ -140,7 +152,6 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
     for pad in pads:
         rb = pad["rel_bounds"]
         rb_um = (rb[0]*scale, rb[1]*scale, rb[2]*scale, rb[3]*scale)
-        # 带有边界信息的哈希命名（将负号转为 M，满足命名规则）
         ps_name = f'PAD_{rb_um[0]:.0f}_{rb_um[1]:.0f}_{rb_um[2]:.0f}_{rb_um[3]:.0f}'.replace("-", "M")
         pad["padstack"] = ps_name
         if ps_name not in unique_padstacks:
@@ -154,9 +165,9 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
         '  (structure',
         '    (layer F.Cu (type signal) (property (index 0)))',
         '    (layer B.Cu (type signal) (property (index 1)))',
-        f'    (boundary (path pcb 0 {min_x * scale:.0f} {min_y * scale:.0f} {max_x * scale:.0f} {min_y * scale:.0f} {max_x * scale:.0f} {max_y * scale:.0f} {min_x * scale:.0f} {max_y * scale:.0f} {min_x * scale:.0f} {min_y * scale:.0f}))',
-        '    (via via0)',
-        '    (rule (width 400) (clearance 350))',
+        f'    (boundary (path pcb 0 {board_min_x * scale:.0f} {board_min_y * scale:.0f} {board_max_x * scale:.0f} {board_min_y * scale:.0f} {board_max_x * scale:.0f} {board_max_y * scale:.0f} {board_min_x * scale:.0f} {board_max_y * scale:.0f} {board_min_x * scale:.0f} {board_min_y * scale:.0f}))',
+        '    (via via0)',  # 必需：防 FreeRouting 崩溃
+        f'    (rule (width {width_um}) (clearance {clearance_um}))', 
         '  )',
         '  (placement',
         f'    (component {name}',
@@ -165,7 +176,7 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
         '  )',
         '  (library',
         f'    (image {name}',
-        '      (outline (path signal 50 -30000 -20000 30000 -20000 30000 20000 -30000 20000 -30000 -20000))',
+        f'      (outline (path signal 50 {comp_min_x * scale:.0f} {comp_min_y * scale:.0f} {comp_max_x * scale:.0f} {comp_min_y * scale:.0f} {comp_max_x * scale:.0f} {comp_max_y * scale:.0f} {comp_min_x * scale:.0f} {comp_max_y * scale:.0f} {comp_min_x * scale:.0f} {comp_min_y * scale:.0f}))',
     ]
     
     for pad in pads:
@@ -175,7 +186,6 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
         '    )'
     ]
     
-    # 写入完美包裹整个复合焊盘的形变边框
     for ps_name, rb in unique_padstacks.items():
         lines += [
             f'    (padstack {ps_name}',
@@ -203,8 +213,8 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
         
     lines += [
         f'    (class default {" ".join(net_names)}',
-        '      (circuit (use_layer F.Cu) (use_via via0))', 
-        '      (rule (width 400) (clearance 350))',
+        f'      (circuit (use_layer {layers_str}) (use_via via0))', 
+        f'      (rule (width {width_um}) (clearance {clearance_um}))', 
         '    )',
         '  )',
         ')',
@@ -223,31 +233,30 @@ def parse_ses(ses_path: Path) -> dict[str, list[list[tuple[float, float]]]]:
         if not match:
             continue
         net_name = match.group(1)
-        if net_name not in routes:
-            routes[net_name] = []
-            
+        
         path_blocks = re.findall(r'\(\s*path\s+[^)]+\)', block)
-        for pb in path_blocks:
-            tokens = pb.replace("(", " ").replace(")", " ").split()
-            if len(tokens) >= 3:
-                coords = tokens[3:]
-                points = []
-                for i in range(0, len(coords) - 1, 2):
-                    try:
-                        x = float(coords[i]) / 1000.0
-                        y = float(coords[i+1]) / 1000.0
-                        points.append((x, y))
-                    except ValueError:
-                        pass
-                if len(points) >= 2:
-                    routes[net_name].append(points)
+        if path_blocks:
+            if net_name not in routes:
+                routes[net_name] = []
+            for pb in path_blocks:
+                tokens = pb.replace("(", " ").replace(")", " ").split()
+                if len(tokens) >= 3:
+                    coords = tokens[3:]
+                    points = []
+                    for i in range(0, len(coords) - 1, 2):
+                        try:
+                            x = float(coords[i]) / 1000.0
+                            y = float(coords[i+1]) / 1000.0
+                            points.append((x, y))
+                        except ValueError:
+                            pass
+                    if len(points) >= 2:
+                        routes[net_name].append(points)
                     
-    if not routes:
-        raise RuntimeError(f"SES 中没有解析到走线: {ses_path}")
     return routes
 
 
-def render_svg(footprint: Path, svg: Path, routes: dict[str, list[list[tuple[float, float]]]]) -> None:
+def render_svg(footprint: Path, svg: Path, routes: dict[str, list[list[tuple[float, float]]]], trace_width: float = 0.254) -> None:
     from k2svg import kicad_to_svg
 
     base_svg = svg.with_name(f".{svg.stem}.base.svg")
@@ -260,15 +269,17 @@ def render_svg(footprint: Path, svg: Path, routes: dict[str, list[list[tuple[flo
         color = colors[index % len(colors)]
         for points in segments:
             points_text = " ".join(f"{x:.3f},{y:.3f}" for x, y in points)
-            marks.append(f'  <!-- FreeRouting {net} -->\n  <polyline points="{points_text}" fill="none" stroke="{color}" stroke-width="0.40" stroke-linecap="round" stroke-linejoin="round"/>')
+            # 使用动态 trace_width 参数更新 stroke-width
+            marks.append(f'  <!-- FreeRouting {net} -->\n  <polyline points="{points_text}" fill="none" stroke="{color}" stroke-width="{trace_width:.3f}" stroke-linecap="round" stroke-linejoin="round"/>')
             
     content = content.replace("\n</svg>", "\n" + "\n".join(marks) + "\n</svg>")
     svg.write_text(content, encoding="utf-8")
-    base_svg.unlink()
+    if base_svg.exists():
+        base_svg.unlink()
 
 
-def print_multi_dot_lines(routes: dict[str, list[list[tuple[float, float]]]]) -> None:
-    """Print SES routes as eight reusable KiCad multi_dot_line calls."""
+def print_multi_dot_lines(routes: dict[str, list[list[tuple[float, float]]]], trace_width: float = 0.254, layer: str = "F.Cu") -> None:
+    """Print SES routes as reusable KiCad multi_dot_line calls."""
     print("\n# FreeRouting routes as multi_dot_line calls")
     for net_name in sorted(routes, key=lambda name: int(name.removeprefix("NET_"))):
         remaining = [list(segment) for segment in routes[net_name]]
@@ -294,39 +305,79 @@ def print_multi_dot_lines(routes: dict[str, list[list[tuple[float, float]]]]) ->
             else:
                 raise RuntimeError(f"{net_name} 的 SES 片段无法连续拼接")
         dots = ", ".join(f"({x:.3f}, {y:.3f})" for x, y in points)
-        print(f"multi_dot_line(kicad_mod, [{dots}], width=0.254, layers='F.Cu',)")
+        print(f"multi_dot_line(kicad_mod, [{dots}], width={trace_width}, layers='{layer}',)")
 
 
 def main() -> None:
+    try:
+        import Q; print(Q.IBT_2x4())
+    except ImportError:
+        pass
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=ROOT / "IBT_2x4-30x20.kicad_mod")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "generated" / "svg")
     parser.add_argument("--jar", type=Path, default=DEFAULT_JAR)
+    
+    # 布线与几何控制参数
+    parser.add_argument("--layers", nargs="+", default=["F.Cu"], help="允许布线的层，如 F.Cu B.Cu")
+    parser.add_argument("--trace-width", type=float, default=0.254, help="线宽 (mm)，默认 0.254")
+    parser.add_argument("--clearance", type=float, default=0.5, help="安全间距 (mm)，默认 0.200")
+    parser.add_argument("--margin", type=float, default=20.0, help="板框外扩边距 (mm)，默认 20.0")
+    
+    # FreeRouting 引擎高级参数
+    parser.add_argument("--passes", type=int, default=100, help="FreeRouting 路由最大迭代次数 (-mp)，默认 100")
+    
     args = parser.parse_args()
 
     ensure_runtime(args.jar)
     name, pads, obstacles = read_footprint(args.input)
-    # 建立 8 组独立网络
+    
     connections = [(i, 8 + i) for i in range(4)] + [(4 + i, 12 + i) for i in range(4)]
+    
     dsn = args.output_dir / f"{name}.dsn"
     ses = args.output_dir / f"{name}.ses"
     svg = args.output_dir / f"{name}-freerouting.svg"
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    make_dsn(name, pads, obstacles, connections, dsn)
 
-    subprocess.run(["java", "-jar", str(args.jar), "-de", str(dsn), "-do", str(ses)], check=True)
+    make_dsn(
+        name=name,
+        pads=pads,
+        obstacles=obstacles,
+        connections=connections,
+        output=dsn,
+        routing_layers=args.layers,
+        trace_width=args.trace_width,
+        clearance=args.clearance,
+        margin=args.margin,
+    )
+
+    cmd = [
+        "java", "-jar", str(args.jar),
+        "-de", str(dsn),
+        "-do", str(ses),
+        "-mp", str(args.passes)
+    ]
+    subprocess.run(cmd, check=True)
+    
     routes = parse_ses(ses)
-    render_svg(args.input, svg, routes)
+    
+    # 将 args.trace_width 显式传入 render_svg 函数
+    render_svg(args.input, svg, routes, trace_width=args.trace_width)
     
     if len(routes) != len(connections):
-        raise RuntimeError(f"期望 {len(connections)} 条网络，实际得到 {len(routes)} 条")
+        raise RuntimeError(
+            f"布线层: {args.layers}, 线宽: {args.trace_width}mm, 安全间距: {args.clearance}mm, "
+            f"板框边距: {args.margin}mm, 迭代上限: {args.passes} | 期望 {len(connections)} 条网络，实际得到 {len(routes)} 条"
+        )
 
-    print_multi_dot_lines(routes)
+    print_multi_dot_lines(routes, trace_width=args.trace_width, layer=args.layers[0])
         
     total_segments = sum(len(segs) for segs in routes.values())
     print(f"[OK] DSN: {dsn}")
     print(f"[OK] SES: {ses}")
     print(f"[OK] SVG: {svg} (网络数: {len(routes)}, 物理片段总数: {total_segments})")
+    print(f"[配置] 布线层: {args.layers}, 线宽: {args.trace_width}mm, 安全间距: {args.clearance}mm, 板框边距: {args.margin}mm, 迭代上限: {args.passes}")
 
 
 if __name__ == "__main__":

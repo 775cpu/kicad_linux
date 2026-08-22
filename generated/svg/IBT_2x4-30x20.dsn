@@ -5,9 +5,9 @@
   (structure
     (layer F.Cu (type signal) (property (index 0)))
     (layer B.Cu (type signal) (property (index 1)))
-    (boundary (path pcb 0 -27800 -14400 9410 -14400 9410 2750 -27800 2750 -27800 -14400))
+    (boundary (path pcb 0 -219800 -209400 205800 -209400 205800 198750 -219800 198750 -219800 -209400))
     (via via0)
-    (rule (width 400) (clearance 350))
+    (rule (width 1000) (clearance 1000))
   )
   (placement
     (component IBT_2x4-30x20
@@ -16,7 +16,7 @@
   )
   (library
     (image IBT_2x4-30x20
-      (outline (path signal 50 -30000 -20000 30000 -20000 30000 20000 -30000 20000 -30000 -20000))
+      (outline (path signal 50 -19800 -9400 5800 -9400 5800 -1250 -19800 -1250 -19800 -9400))
       (pin PAD_M600_M1400_600_600 P0 -3810 -8000)
       (pin PAD_M600_M1400_600_600 P1 -1270 -8000)
       (pin PAD_M600_M1400_600_600 P2 1270 -8000)
@@ -25,14 +25,14 @@
       (pin PAD_M600_M600_600_1400 P5 -1270 -5460)
       (pin PAD_M600_M600_600_1400 P6 1270 -5460)
       (pin PAD_M600_M600_600_1400 P7 3810 -5460)
-      (pin PAD_M550_M750_550_750 P8 -22250 -3000)
-      (pin PAD_M550_M750_550_750 P9 -18750 -3000)
-      (pin PAD_M550_M750_550_750 P10 -15250 -3000)
-      (pin PAD_M550_M750_550_750 P11 -11750 -3000)
-      (pin PAD_M550_M750_550_750 P12 -8250 -3000)
-      (pin PAD_M550_M750_550_750 P13 -4750 -3000)
-      (pin PAD_M550_M750_550_750 P14 -1250 -3000)
-      (pin PAD_M550_M750_550_750 P15 2250 -3000)
+      (pin PAD_M550_M750_550_750 P8 -19250 -2000)
+      (pin PAD_M550_M750_550_750 P9 -15750 -2000)
+      (pin PAD_M550_M750_550_750 P10 -12250 -2000)
+      (pin PAD_M550_M750_550_750 P11 -8750 -2000)
+      (pin PAD_M550_M750_550_750 P12 -5250 -2000)
+      (pin PAD_M550_M750_550_750 P13 -1750 -2000)
+      (pin PAD_M550_M750_550_750 P14 1750 -2000)
+      (pin PAD_M550_M750_550_750 P15 5250 -2000)
     )
     (padstack PAD_M600_M1400_600_600
       (shape (rect F.Cu -600 -1400 600 600))
@@ -66,7 +66,7 @@
     (net NET_8 (pins U1-P7 U1-P15))
     (class default NET_1 NET_2 NET_3 NET_4 NET_5 NET_6 NET_7 NET_8
       (circuit (use_layer F.Cu) (use_via via0))
-      (rule (width 400) (clearance 350))
+      (rule (width 1000) (clearance 1000))
     )
   )
 )
