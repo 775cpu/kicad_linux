@@ -1,4 +1,4 @@
-(module IBT_2x4-30x20 (layer F.Cu) (tedit 6A8A2DA7)
+(module IBT_2x4-30x20 (layer F.Cu) (tedit 6A8A304E)
   (descr IBT_2x4-30x20)
   (fp_text reference IBT_2x4-30x20 (at -9 -9) (layer F.SilkS)
     (effects (font (size 1 1) (thickness 0.15)))

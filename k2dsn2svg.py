@@ -25,11 +25,6 @@ RELEASE_API = "https://api.github.com/repos/freerouting/freerouting/releases/lat
 
 def ensure_runtime(jar_path: Path) -> None:
     """Install the only Python dependency and download FreeRouting on demand."""
-    try:
-        import shapely  # noqa: F401
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "shapely"])
-
     if shutil.which("java") is None:
         raise RuntimeError("未找到 Java；请安装 Java 17 或更高版本后重试")
     if not jar_path.exists():
