@@ -267,6 +267,36 @@ def render_svg(footprint: Path, svg: Path, routes: dict[str, list[list[tuple[flo
     base_svg.unlink()
 
 
+def print_multi_dot_lines(routes: dict[str, list[list[tuple[float, float]]]]) -> None:
+    """Print SES routes as eight reusable KiCad multi_dot_line calls."""
+    print("\n# FreeRouting routes as multi_dot_line calls")
+    for net_name in sorted(routes, key=lambda name: int(name.removeprefix("NET_"))):
+        remaining = [list(segment) for segment in routes[net_name]]
+        points = remaining.pop(0)
+        while remaining:
+            for index, segment in enumerate(remaining):
+                if segment[0] == points[-1]:
+                    points.extend(segment[1:])
+                    remaining.pop(index)
+                    break
+                if segment[-1] == points[-1]:
+                    points.extend(reversed(segment[:-1]))
+                    remaining.pop(index)
+                    break
+                if segment[-1] == points[0]:
+                    points = segment[:-1] + points
+                    remaining.pop(index)
+                    break
+                if segment[0] == points[0]:
+                    points = list(reversed(segment[1:])) + points
+                    remaining.pop(index)
+                    break
+            else:
+                raise RuntimeError(f"{net_name} 的 SES 片段无法连续拼接")
+        dots = ", ".join(f"({x:.3f}, {y:.3f})" for x, y in points)
+        print(f"multi_dot_line(kicad_mod, [{dots}], width=0.254, layers='F.Cu',)")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=ROOT / "IBT_2x4-30x20.kicad_mod")
@@ -290,6 +320,8 @@ def main() -> None:
     
     if len(routes) != len(connections):
         raise RuntimeError(f"期望 {len(connections)} 条网络，实际得到 {len(routes)} 条")
+
+    print_multi_dot_lines(routes)
         
     total_segments = sum(len(segs) for segs in routes.values())
     print(f"[OK] DSN: {dsn}")
