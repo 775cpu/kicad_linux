@@ -60,7 +60,7 @@
     (net NET_7 (pins U1-P6 U1-P14))
     (net NET_8 (pins U1-P7 U1-P15))
     (class default NET_1 NET_2 NET_3 NET_4 NET_5 NET_6 NET_7 NET_8
-      (circuit (use_via via0))
+      (circuit (use_layer F.Cu) (use_via via0))
       (rule (width 400) (clearance 350))
     )
   )

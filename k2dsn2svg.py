@@ -2,7 +2,7 @@
 """Route KiCad footprints with FreeRouting and render the resulting SES as SVG.
 
 The footprint is converted to a small Specctra design containing one placed
-component.  FreeRouting owns the actual obstacle avoidance; the SVG renderer
+component. FreeRouting owns the actual obstacle avoidance; the SVG renderer
 is only used to inspect the result.
 """
 
@@ -85,16 +85,13 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
     max_x = max(p["x"] for p in pads)
     min_y = min(p["y"] for p in pads)
     max_y = max(p["y"] for p in pads)
-    # A generous boundary gives the router room to escape congested pads.
     min_x, max_x = min_x - 5.0, max_x + 5.0
     min_y, max_y = min_y - 5.0, max_y + 5.0
 
     scale = 1000
     
-    # [核心修复 1]: 动态构建各种尺寸的焊盘 Padstack，避免硬编码 600um 圆形
     unique_padstacks = {}
     for pad in pads:
-        # 提取真实宽高并命名，替换小数点以符合 DSN 规范
         ps_name = f'PTH_{pad["w"]*scale:.0f}_{pad["h"]*scale:.0f}'
         pad["padstack"] = ps_name
         if ps_name not in unique_padstacks:
@@ -123,14 +120,12 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
     ]
     
     for pad in pads:
-        # 使用动态指派的专属 padstack 名字
         lines.append(f'      (pin {pad["padstack"]} {pad["number"]} {pad["x"] * scale:.0f} {pad["y"] * scale:.0f})')
         
     lines += [
         '    )'
     ]
     
-    # 写入动态创建的焊盘真实边界 (rect)
     for ps_name, (w, h) in unique_padstacks.items():
         hw = (w * scale) / 2.0
         hh = (h * scale) / 2.0
@@ -152,7 +147,6 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
         '  (network',
     ]
     
-    # [核心修复 2]: 自动收集生成的网络，确保它们全都被赋予间距规则
     net_names = []
     for index, (first, second) in enumerate(connections, 1):
         net_name = f"NET_{index}"
@@ -161,7 +155,7 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
         
     lines += [
         f'    (class default {" ".join(net_names)}',
-        '      (circuit (use_via via0))',
+        '      (circuit (use_layer F.Cu) (use_via via0))', # 保留了关键的单层强制限制
         '      (rule (width 400) (clearance 350))',
         '    )',
         '  )',
@@ -171,45 +165,60 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
     output.write_text("\n".join(lines), encoding="utf-8")
 
 
-def parse_ses(ses_path: Path) -> list[tuple[str, list[tuple[float, float]]]]:
-    """Extract FreeRouting paths and convert its micrometre coordinates to mm."""
-    lines = ses_path.read_text(encoding="utf-8").splitlines()
-    routes = []
-    current_net = None
-    in_path = False
-    points = []
-    for line in lines:
-        net_match = re.search(r'\(net\s+"?([^"\s()]+)', line)
-        if net_match:
-            current_net = net_match.group(1)
-        if "(path " in line:
-            in_path = True
-            points = []
+def parse_ses(ses_path: Path) -> dict[str, list[list[tuple[float, float]]]]:
+    """提取 FreeRouting 的走线。将属于同一个网络名称的多个物理片段进行聚合存放。"""
+    content = ses_path.read_text(encoding="utf-8")
+    routes = {}
+    
+    # 按照网络区块进行正则切分
+    net_blocks = re.split(r'\(\s*net\s+', content)[1:]
+    for block in net_blocks:
+        match = re.match(r'"?([^"\s()]+)"?', block)
+        if not match:
             continue
-        if in_path:
-            values = re.findall(r"[-+0-9.eE]+", line)
-            if len(values) >= 2:
-                points.append((float(values[0]) / 1000.0, float(values[1]) / 1000.0))
-            if ")" in line and len(points) >= 2:
-                routes.append((current_net or "unknown", points))
-                in_path = False
+        net_name = match.group(1)
+        if net_name not in routes:
+            routes[net_name] = []
+            
+        # 查找当前网络下所有的走线片段
+        path_blocks = re.findall(r'\(\s*path\s+[^)]+\)', block)
+        for pb in path_blocks:
+            # 抹除括号与换行以提取其中的纯坐标
+            tokens = pb.replace("(", " ").replace(")", " ").split()
+            if len(tokens) >= 3:
+                coords = tokens[3:]
+                points = []
+                for i in range(0, len(coords) - 1, 2):
+                    try:
+                        x = float(coords[i]) / 1000.0
+                        y = float(coords[i+1]) / 1000.0
+                        points.append((x, y))
+                    except ValueError:
+                        pass
+                if len(points) >= 2:
+                    routes[net_name].append(points)
+                    
     if not routes:
         raise RuntimeError(f"SES 中没有解析到走线: {ses_path}")
     return routes
 
 
-def render_svg(footprint: Path, svg: Path, routes: list[tuple[str, list[tuple[float, float]]]]) -> None:
+def render_svg(footprint: Path, svg: Path, routes: dict[str, list[list[tuple[float, float]]]]) -> None:
     from k2svg import kicad_to_svg
 
-    # Render the footprint first, then append SES paths before the closing tag.
     base_svg = svg.with_name(f".{svg.stem}.base.svg")
     kicad_to_svg(str(footprint), layers=["F.Cu", "B.Cu", "Edge.Cuts", "F.SilkS"], out_dir=str(svg.parent), file_name=base_svg.name)
     content = base_svg.read_text(encoding="utf-8")
     marks = []
     colors = ["#00FF00", "#00BFFF", "#FFB000", "#FF4FA3", "#A8FF00", "#FFFFFF"]
-    for index, (net, points) in enumerate(routes):
-        points_text = " ".join(f"{x:.3f},{y:.3f}" for x, y in points)
-        marks.append(f'  <!-- FreeRouting {net} -->\n  <polyline points="{points_text}" fill="none" stroke="{colors[index % len(colors)]}" stroke-width="0.40" stroke-linecap="round" stroke-linejoin="round"/>')
+    
+    # 遍历聚合字典。遍历的键数量即真实的网络总数量
+    for index, (net, segments) in enumerate(routes.items()):
+        color = colors[index % len(colors)]
+        for points in segments:
+            points_text = " ".join(f"{x:.3f},{y:.3f}" for x, y in points)
+            marks.append(f'  <!-- FreeRouting {net} -->\n  <polyline points="{points_text}" fill="none" stroke="{color}" stroke-width="0.40" stroke-linecap="round" stroke-linejoin="round"/>')
+            
     content = content.replace("\n</svg>", "\n" + "\n".join(marks) + "\n</svg>")
     svg.write_text(content, encoding="utf-8")
     base_svg.unlink()
@@ -224,8 +233,7 @@ def main() -> None:
 
     ensure_runtime(args.jar)
     name, pads, obstacles = read_footprint(args.input)
-    # Eight requested pairs: cs1_4[i] -> cs8[i], cs5_8[i] -> cs8[i + 4].
-    # Through-hole indices are cs1_4=0..3, cs5_8=4..7 and cs8=8..15.
+    # 建立8组网络连通关系
     connections = [(i, 8 + i) for i in range(4)] + [(4 + i, 12 + i) for i in range(4)]
     dsn = args.output_dir / f"{name}.dsn"
     ses = args.output_dir / f"{name}.ses"
@@ -236,11 +244,15 @@ def main() -> None:
     subprocess.run(["java", "-jar", str(args.jar), "-de", str(dsn), "-do", str(ses)], check=True)
     routes = parse_ses(ses)
     render_svg(args.input, svg, routes)
+    
+    # 通过字典的长度，这回就可以准确检验生成出来的独立网络条数是否严格等于 8
     if len(routes) != len(connections):
         raise RuntimeError(f"期望 {len(connections)} 条网络，实际得到 {len(routes)} 条")
+        
+    total_segments = sum(len(segs) for segs in routes.values())
     print(f"[OK] DSN: {dsn}")
     print(f"[OK] SES: {ses}")
-    print(f"[OK] SVG: {svg} ({len(routes)} routes)")
+    print(f"[OK] SVG: {svg} (网络数: {len(routes)}, 物理片段总数: {total_segments})")
 
 
 if __name__ == "__main__":
