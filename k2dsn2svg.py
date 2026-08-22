@@ -361,13 +361,43 @@ def main() -> None:
     parser.add_argument("--clearance", type=float, default=0.5, help="安全间距 (mm)，默认 0.200")
     parser.add_argument("--margin", type=float, default=20.0, help="板框外扩边距 (mm)，默认 20.0")
     parser.add_argument("--passes", type=int, default=100, help="FreeRouting 路由最大迭代次数 (-mp)，默认 100")
+    # 新增：动态接线表
+    parser.add_argument("--connect", nargs="+", help="自定义连接关系，格式为 引脚A:引脚B，例如 --connect 1:9 2:10")
     
     args = parser.parse_args()
 
     ensure_runtime(args.jar)
     name, pads, obstacles = read_footprint(args.input)
     
-    connections = [(i, 8 + i) for i in range(4)] + [(4 + i, 12 + i) for i in range(4)]
+    # ==== 连接关系生成（替换原硬编码） ====
+    if args.connect:
+        connections = []
+        pad_num_to_idx = {p["number"]: i for i, p in enumerate(pads)}
+        for pair in args.connect:
+            if ":" not in pair:
+                raise ValueError(f"连接对格式错误: {pair}，应为 引脚A:引脚B")
+            a, b = pair.split(":")
+            a, b = a.strip(), b.strip()
+            # 尝试作为索引解析
+            try:
+                idx_a = int(a)
+                idx_b = int(b)
+                if idx_a < 0 or idx_a >= len(pads) or idx_b < 0 or idx_b >= len(pads):
+                    raise ValueError
+                connections.append((idx_a, idx_b))
+            except ValueError:
+                # 尝试作为 pad number 解析（如 P0:P1）
+                if a in pad_num_to_idx and b in pad_num_to_idx:
+                    connections.append((pad_num_to_idx[a], pad_num_to_idx[b]))
+                else:
+                    raise ValueError(f"无法解析连接对: {pair}，请使用有效索引或 pad 编号（如 P0:P1）")
+    else:
+        # 默认连接逻辑：若引脚数 >= 16，采用原 16 脚排布；否则两两相邻连接
+        if len(pads) >= 16:
+            connections = [(i, 8 + i) for i in range(4)] + [(4 + i, 12 + i) for i in range(4)]
+        else:
+            pad_names = [p["number"] for p in pads]
+            connections = [(i, i+1) for i in range(0, len(pad_names)-1, 2)]
     
     dsn = args.output_dir / f"{name}.dsn"
     ses = args.output_dir / f"{name}.ses"
