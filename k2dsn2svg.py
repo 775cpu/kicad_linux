@@ -51,20 +51,17 @@ def read_footprint(path: Path):
     if not data or data[0] != "module":
         raise ValueError(f"无效的 KiCad 封装: {path}")
 
-    pads = []
+    # 1. 收集所有的物理焊盘并按引脚名称聚类
+    pad_groups = {}
     obstacles = []
     for item in data[2:]:
         if not isinstance(item, list) or not item:
             continue
-        if item[0] == "pad" and item[2] == "thru_hole":
-            at = find_sub(item, "at")
-            size = find_sub(item, "size")
-            if at and size:
-                pads.append({
-                    "number": f"P{len(pads)}",
-                    "x": float(at[1]), "y": float(at[2]),
-                    "w": float(size[1]), "h": float(size[2]),
-                })
+        if item[0] == "pad":
+            pad_name = item[1]
+            if pad_name not in pad_groups:
+                pad_groups[pad_name] = []
+            pad_groups[pad_name].append(item)
         elif item[0] == "fp_poly":
             points = find_sub(item, "pts")
             if points:
@@ -74,6 +71,54 @@ def read_footprint(path: Path):
             if start and end:
                 obstacles.append([(float(start[1]), float(start[2])), (float(end[1]), float(end[2]))])
 
+    pads = []
+    # 2. 合并同名焊盘（如 thru_hole + smd 偏置），提取能覆盖所有碎片的绝对外框
+    for pad_name, shapes in pad_groups.items():
+        # 寻找主锚点（优先采用 thru_hole 类型的坐标作为基准连线中心）
+        anchor_at = None
+        for shape in shapes:
+            if shape[2] == "thru_hole":
+                anchor_at = find_sub(shape, "at")
+                break
+        if not anchor_at:
+            anchor_at = find_sub(shapes[0], "at")
+
+        anchor_x = float(anchor_at[1])
+        anchor_y = float(anchor_at[2])
+
+        min_x, max_x = float('inf'), float('-inf')
+        min_y, max_y = float('inf'), float('-inf')
+
+        for shape in shapes:
+            at = find_sub(shape, "at") or anchor_at
+            size = find_sub(shape, "size")
+            if not size:
+                continue
+            
+            px, py = float(at[1]), float(at[2])
+            pw, ph = float(size[1]), float(size[2])
+            
+            # 兼容带有旋转角度的 pad (处理正交旋转)
+            if len(at) > 3:
+                rot = float(at[3])
+                if rot in (90, 270, -90, -270):
+                    pw, ph = ph, pw
+
+            min_x = min(min_x, px - pw / 2.0)
+            max_x = max(max_x, px + pw / 2.0)
+            min_y = min(min_y, py - ph / 2.0)
+            max_y = max(max_y, py + ph / 2.0)
+
+        # 生成相对于主锚点的边框（供 FreeRouting 作为 padstack shape）
+        rel_bounds = (min_x - anchor_x, min_y - anchor_y, max_x - anchor_x, max_y - anchor_y)
+        
+        pads.append({
+            "number": f"P{len(pads)}",
+            "x": anchor_x,
+            "y": anchor_y,
+            "rel_bounds": rel_bounds
+        })
+
     if not pads:
         raise ValueError("封装中没有可布线焊盘")
     return data[1], pads, obstacles
@@ -81,10 +126,11 @@ def read_footprint(path: Path):
 
 def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, float]]],
              connections: list[tuple[int, int]], output: Path) -> None:
-    min_x = min(p["x"] for p in pads)
-    max_x = max(p["x"] for p in pads)
-    min_y = min(p["y"] for p in pads)
-    max_y = max(p["y"] for p in pads)
+    # 此时计算全局包围盒也需把焊盘偏置算入
+    min_x = min(p["x"] + p["rel_bounds"][0] for p in pads)
+    max_x = max(p["x"] + p["rel_bounds"][2] for p in pads)
+    min_y = min(p["y"] + p["rel_bounds"][1] for p in pads)
+    max_y = max(p["y"] + p["rel_bounds"][3] for p in pads)
     min_x, max_x = min_x - 5.0, max_x + 5.0
     min_y, max_y = min_y - 5.0, max_y + 5.0
 
@@ -92,10 +138,13 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
     
     unique_padstacks = {}
     for pad in pads:
-        ps_name = f'PTH_{pad["w"]*scale:.0f}_{pad["h"]*scale:.0f}'
+        rb = pad["rel_bounds"]
+        rb_um = (rb[0]*scale, rb[1]*scale, rb[2]*scale, rb[3]*scale)
+        # 带有边界信息的哈希命名（将负号转为 M，满足命名规则）
+        ps_name = f'PAD_{rb_um[0]:.0f}_{rb_um[1]:.0f}_{rb_um[2]:.0f}_{rb_um[3]:.0f}'.replace("-", "M")
         pad["padstack"] = ps_name
         if ps_name not in unique_padstacks:
-            unique_padstacks[ps_name] = (pad["w"], pad["h"])
+            unique_padstacks[ps_name] = rb_um
 
     lines = [
         f'(pcb "{name}"',
@@ -126,13 +175,12 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
         '    )'
     ]
     
-    for ps_name, (w, h) in unique_padstacks.items():
-        hw = (w * scale) / 2.0
-        hh = (h * scale) / 2.0
+    # 写入完美包裹整个复合焊盘的形变边框
+    for ps_name, rb in unique_padstacks.items():
         lines += [
             f'    (padstack {ps_name}',
-            f'      (shape (rect F.Cu {-hw:.0f} {-hh:.0f} {hw:.0f} {hh:.0f}))',
-            f'      (shape (rect B.Cu {-hw:.0f} {-hh:.0f} {hw:.0f} {hh:.0f}))',
+            f'      (shape (rect F.Cu {rb[0]:.0f} {rb[1]:.0f} {rb[2]:.0f} {rb[3]:.0f}))',
+            f'      (shape (rect B.Cu {rb[0]:.0f} {rb[1]:.0f} {rb[2]:.0f} {rb[3]:.0f}))',
             '      (attach off)',
             '    )'
         ]
@@ -155,7 +203,7 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
         
     lines += [
         f'    (class default {" ".join(net_names)}',
-        '      (circuit (use_layer F.Cu) (use_via via0))', # 保留了关键的单层强制限制
+        '      (circuit (use_layer F.Cu) (use_via via0))', 
         '      (rule (width 400) (clearance 350))',
         '    )',
         '  )',
@@ -166,11 +214,9 @@ def make_dsn(name: str, pads: list[dict], obstacles: list[list[tuple[float, floa
 
 
 def parse_ses(ses_path: Path) -> dict[str, list[list[tuple[float, float]]]]:
-    """提取 FreeRouting 的走线。将属于同一个网络名称的多个物理片段进行聚合存放。"""
     content = ses_path.read_text(encoding="utf-8")
     routes = {}
     
-    # 按照网络区块进行正则切分
     net_blocks = re.split(r'\(\s*net\s+', content)[1:]
     for block in net_blocks:
         match = re.match(r'"?([^"\s()]+)"?', block)
@@ -180,10 +226,8 @@ def parse_ses(ses_path: Path) -> dict[str, list[list[tuple[float, float]]]]:
         if net_name not in routes:
             routes[net_name] = []
             
-        # 查找当前网络下所有的走线片段
         path_blocks = re.findall(r'\(\s*path\s+[^)]+\)', block)
         for pb in path_blocks:
-            # 抹除括号与换行以提取其中的纯坐标
             tokens = pb.replace("(", " ").replace(")", " ").split()
             if len(tokens) >= 3:
                 coords = tokens[3:]
@@ -212,7 +256,6 @@ def render_svg(footprint: Path, svg: Path, routes: dict[str, list[list[tuple[flo
     marks = []
     colors = ["#00FF00", "#00BFFF", "#FFB000", "#FF4FA3", "#A8FF00", "#FFFFFF"]
     
-    # 遍历聚合字典。遍历的键数量即真实的网络总数量
     for index, (net, segments) in enumerate(routes.items()):
         color = colors[index % len(colors)]
         for points in segments:
@@ -233,7 +276,7 @@ def main() -> None:
 
     ensure_runtime(args.jar)
     name, pads, obstacles = read_footprint(args.input)
-    # 建立8组网络连通关系
+    # 建立 8 组独立网络
     connections = [(i, 8 + i) for i in range(4)] + [(4 + i, 12 + i) for i in range(4)]
     dsn = args.output_dir / f"{name}.dsn"
     ses = args.output_dir / f"{name}.ses"
@@ -245,7 +288,6 @@ def main() -> None:
     routes = parse_ses(ses)
     render_svg(args.input, svg, routes)
     
-    # 通过字典的长度，这回就可以准确检验生成出来的独立网络条数是否严格等于 8
     if len(routes) != len(connections):
         raise RuntimeError(f"期望 {len(connections)} 条网络，实际得到 {len(routes)} 条")
         
