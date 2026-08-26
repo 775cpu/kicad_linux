@@ -347,7 +347,7 @@ def print_multi_dot_lines(routes: dict[str, list[list[tuple[float, float]]]], tr
 
 def main() -> None:
     try:
-        import Q; print(Q.IBT_2x4())
+        from kicad import Q; print(Q.IBT_2x4())
     except ImportError:
         pass
 
@@ -362,7 +362,7 @@ def main() -> None:
     parser.add_argument("--margin", type=float, default=20.0, help="板框外扩边距 (mm)，默认 20.0")
     parser.add_argument("--passes", type=int, default=100, help="FreeRouting 路由最大迭代次数 (-mp)，默认 100")
     # 新增：动态接线表
-    parser.add_argument("--connect", nargs="+", help="自定义连接关系，格式为 引脚A:引脚B，例如 --connect 1:9 2:10")
+    parser.add_argument("--connect",'-c', nargs="+", help="自定义连接关系，格式为 引脚A:引脚B，例如 --connect 1:9 2:10")
     
     args = parser.parse_args()
 

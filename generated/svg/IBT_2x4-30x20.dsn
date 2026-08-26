@@ -5,9 +5,9 @@
   (structure
     (layer F.Cu (type signal) (property (index 0)))
     (layer B.Cu (type signal) (property (index 1)))
-    (boundary (path pcb 0 -219800 -209400 205800 -209400 205800 198750 -219800 198750 -219800 -209400))
+    (boundary (path pcb 0 -519800 -509400 505800 -509400 505800 498750 -519800 498750 -519800 -509400))
     (via via0)
-    (rule (width 1000) (clearance 1000))
+    (rule (width 1500) (clearance 500))
   )
   (placement
     (component IBT_2x4-30x20
@@ -66,7 +66,7 @@
     (net NET_8 (pins U1-P7 U1-P15))
     (class default NET_1 NET_2 NET_3 NET_4 NET_5 NET_6 NET_7 NET_8
       (circuit (use_layer F.Cu) (use_via via0))
-      (rule (width 1000) (clearance 1000))
+      (rule (width 1500) (clearance 500))
     )
   )
 )

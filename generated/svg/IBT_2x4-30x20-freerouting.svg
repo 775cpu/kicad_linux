@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-26.996 -15.917 41.604 23.913" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-26.569 -15.900 41.121 23.038" width="100%" height="100%">
   <rect x="-22.0" y="-14.0" width="44.0" height="28.0" fill="#0A0A0A"/>
 <line x1="-15.0" y1="-10.0" x2="-15.0" y2="10.0" stroke="#E6E6E6" stroke-width="0.12" stroke-linecap="round"/>
   <line x1="-15.0" y1="10.0" x2="15.0" y2="10.0" stroke="#E6E6E6" stroke-width="0.12" stroke-linecap="round"/>
@@ -54,32 +54,36 @@
   <circle cx="1.75" cy="-2.0" r="0.5" fill="#0A0A0A"/>
   <circle cx="5.25" cy="-2.0" r="0.5" fill="#0A0A0A"/>
   <!-- FreeRouting Boundary -->
-  <rect x="-219.800" y="-209.400" width="425.600" height="408.150" fill="none" stroke="red" stroke-width="0.1" stroke-dasharray="2,2"/>
+  <rect x="-519.800" y="-509.400" width="1025.600" height="1008.150" fill="none" stroke="red" stroke-width="0.1" stroke-dasharray="2,2"/>
   <!-- Center Cross -->
   <line x1="-8.000" y1="-5.325" x2="-6.000" y2="-5.325" stroke="red" stroke-width="0.1"/>
   <line x1="-7.000" y1="-6.325" x2="-7.000" y2="-4.325" stroke="red" stroke-width="0.1"/>
   <!-- FreeRouting NET_1 -->
-  <polyline points="-19.250,-2.000 -13.250,-8.000 -3.810,-8.000" fill="none" stroke="#00FF00" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="-3.810,-8.000 -13.250,-8.000 -19.250,-2.000" fill="none" stroke="#00FF00" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_2 -->
-  <polyline points="-15.750,-2.000 -18.818,1.068 -20.193,1.068 -21.996,-0.735 -21.996,-3.405 -14.484,-10.917 -1.270,-10.917" fill="none" stroke="#00BFFF" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="-1.270,-8.000 -1.270,-10.900" fill="none" stroke="#00BFFF" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_2 -->
-  <polyline points="-1.270,-8.000 -1.270,-10.917" fill="none" stroke="#00BFFF" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="-15.750,-2.000 -17.767,0.017 -21.065,0.017 -21.569,-0.487 -21.569,-2.804 -13.473,-10.900 -1.270,-10.900" fill="none" stroke="#00BFFF" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_3 -->
-  <polyline points="1.270,-8.000 1.270,-10.917" fill="none" stroke="#FFB000" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="1.270,-10.900 5.302,-10.900 9.552,-6.650 9.552,-0.239 7.175,2.138 -8.112,2.138 -12.250,-2.000" fill="none" stroke="#FFB000" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_3 -->
-  <polyline points="1.270,-10.917 5.479,-10.917 9.608,-6.788 9.608,1.250 7.862,2.996 -7.254,2.996 -12.250,-2.000" fill="none" stroke="#FFB000" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="1.270,-8.000 1.270,-10.900" fill="none" stroke="#FFB000" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_4 -->
-  <polyline points="-8.750,-2.000 -6.483,0.267 6.930,0.267 7.540,-0.343 7.540,-5.226 4.766,-8.000 3.810,-8.000" fill="none" stroke="#FF4FA3" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="-8.750,-2.000 -6.629,0.121 6.339,0.121 7.535,-1.075 7.535,-5.403 4.938,-8.000 3.810,-8.000" fill="none" stroke="#FF4FA3" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_5 -->
-  <polyline points="-5.250,-2.000 -5.250,-4.267" fill="none" stroke="#A8FF00" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="-5.250,-2.000 -5.250,-4.250" fill="none" stroke="#A8FF00" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_5 -->
-  <polyline points="-5.250,-4.267 -5.003,-4.267 -3.810,-5.460" fill="none" stroke="#A8FF00" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="-5.250,-4.250 -5.020,-4.250 -3.810,-5.460" fill="none" stroke="#A8FF00" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_6 -->
-  <polyline points="-1.750,-2.000 -1.270,-2.480 -1.270,-5.460" fill="none" stroke="#FFFFFF" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="-1.750,-2.000 -1.750,-4.250" fill="none" stroke="#FFFFFF" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- FreeRouting NET_6 -->
+  <polyline points="-1.750,-4.250 -1.270,-4.730 -1.270,-5.460" fill="none" stroke="#FFFFFF" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_7 -->
-  <polyline points="1.750,-2.000 1.270,-2.480 1.270,-5.460" fill="none" stroke="#00FF00" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="1.750,-2.000 1.750,-4.250" fill="none" stroke="#00FF00" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- FreeRouting NET_7 -->
+  <polyline points="1.750,-4.250 1.270,-4.730 1.270,-5.460" fill="none" stroke="#00FF00" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_8 -->
-  <polyline points="5.250,-2.000 5.250,-4.267" fill="none" stroke="#00BFFF" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="5.250,-2.000 5.250,-4.250" fill="none" stroke="#00BFFF" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- FreeRouting NET_8 -->
-  <polyline points="5.250,-4.267 5.003,-4.267 3.810,-5.460" fill="none" stroke="#00BFFF" stroke-width="1.000" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="5.250,-4.250 5.020,-4.250 3.810,-5.460" fill="none" stroke="#00BFFF" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
